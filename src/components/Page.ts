@@ -7,6 +7,7 @@ interface IPage {
 	catalog: HTMLElement[];
 	locked: boolean;
 }
+
 export class Page extends Component<IPage> {
 	protected _counter: HTMLElement;
 	protected _catalog: HTMLElement;

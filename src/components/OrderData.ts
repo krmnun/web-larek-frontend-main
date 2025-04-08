@@ -1,77 +1,78 @@
-import { IOrder, IOrderData, PaymentType } from '../types';
-import { TFormErrors, TOrderInput } from '../types/index';
-import { IEvents } from './base/events';
+// Временное определение IOrder для отладки
+interface IOrder {
+	total: number;
+	items: string[];
+	email: string;
+	phone: string;
+	address: string;
+	payment: string;
+}
+
+import { IEvents, IOrderData, TFormErrors } from '../types/index';
 
 export class OrderData implements IOrderData {
-	protected _formErrors: TFormErrors;
 	protected _order: IOrder = {
 		total: 0,
 		items: [],
+		payment: '',
+		address: '',
 		email: '',
 		phone: '',
-		address: '',
-		payment: '',
 	};
 
-	constructor(protected events: IEvents) {
-		this.events = events;
+	protected _errors: TFormErrors = {};
+
+	constructor(protected events: IEvents) {}
+
+	setOrderPayment(value: string) {
+		this._order.payment = value;
+		this.validateOrder();
 	}
 
-	get formErrors(): TFormErrors {
-		return this._formErrors;
+	setOrderEmail(value: string) {
+		this._order.email = value;
+		this.validateOrder();
+	}
+
+	setOrderField<K extends keyof IOrder>(field: K, value: IOrder[K]): void {
+		this._order[field] = value;
+		this.validateOrder();
+	}
+
+	validateOrder() {
+		const errors: TFormErrors = {};
+
+		if (!this._order.payment) {
+			errors.payment = 'Необходимо выбрать способ оплаты';
+		}
+		if (!this._order.address) {
+			errors.address = 'Необходимо указать адрес';
+		}
+		if (!this._order.email) {
+			errors.email = 'Необходимо указать email';
+		}
+		if (!this._order.phone) {
+			errors.phone = 'Необходимо указать телефон';
+		}
+
+		this._errors = errors;
+		this.events.emit('errors:change', this._errors);
+		return Object.keys(errors).length === 0;
 	}
 
 	get order(): IOrder {
 		return this._order;
 	}
 
-	setOrderPayment(value: PaymentType) {
-		this._order.payment = value;
-	}
-
-	setOrderEmail(value: string) {
-		this._order.email = value;
-	}
-
-	setOrderAddress(value: string) {
-		this._order.address = value;
-	}
-
-	setOrderField(field: keyof TOrderInput, value: string) {
-		this._order[field] = value;
-		this.validateOrder();
-	}
-
-	validateOrder() {
-		const errors: typeof this._formErrors = {};
-
-		if (!this._order.payment) {
-			errors.payment = 'Укажите способ оплаты';
-		}
-		if (!this._order.email) {
-			errors.email = 'Укажите ваш e-mail';
-		}
-		if (!this._order.address) {
-			errors.address = 'Укажите адрес доставки';
-		}
-		if (!this._order.phone) {
-			errors.phone = 'Укажите номер телефона';
-		}
-
-		this._formErrors = errors;
-		this.events.emit('errors:change', this._formErrors);
-
-		return Object.keys(errors).length === 0;
-	}
-
 	clearOrder() {
 		this._order = {
 			total: 0,
 			items: [],
+			payment: '',
+			address: '',
 			email: '',
 			phone: '',
-			address: '',
-			payment: '',
 		};
+		this._errors = {};
 	}
 }

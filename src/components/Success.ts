@@ -8,21 +8,20 @@ interface ISuccess {
 
 export class Success extends Component<ISuccess> {
 	protected _close: HTMLElement;
-	protected _description: HTMLElement;
+	protected _total: HTMLElement;
 
 	constructor(container: HTMLElement, actions: ISuccessActions) {
 		super(container);
 
-		this._description = container.querySelector('.order-success__description');
-		this._close = ensureElement<HTMLElement>(
-			'.order-success__close',
-			this.container
-		);
-		if (actions.onClick) {
+		this._close = ensureElement<HTMLElement>('.order-success__close', container);
+		this._total = ensureElement<HTMLElement>('.order-success__description', container);
+
+		if (actions?.onClick) {
 			this._close.addEventListener('click', actions.onClick);
 		}
 	}
-	set total(total: number) {
-		this.setText(this._description, `Ваш заказ ${total} синапсов`);
+
+	set total(value: number) {
+		this.setText(this._total, `Списано ${value} синапсов`);
 	}
 }

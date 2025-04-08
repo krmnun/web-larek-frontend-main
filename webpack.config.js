@@ -27,15 +27,16 @@ const config = {
   devServer: {
     open: true,
     host: "localhost",
-    port: 8080,
+    port: 3000,
     watchFiles: ["src/pages/*.html"],
     hot: true,
     proxy: {
-      "/api": {
-        target: "http://localhost:3000",
-        changeOrigin: true,
-      },
+      '/api': 'http://localhost:3000',
     },
+    static: {
+      directory: path.join(__dirname, 'public'), // Указываем папку для статических файлов
+    },
+    compress: true,
   },
   plugins: [
     new HtmlWebpackPlugin({
@@ -88,6 +89,9 @@ const config = {
   },
   optimization: {
     minimize: isProduction,
+    splitChunks: {
+      chunks: 'all',
+    },
     minimizer: [
       new TerserPlugin({
         terserOptions: {

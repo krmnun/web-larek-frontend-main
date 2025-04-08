@@ -1,54 +1,46 @@
-import { TOrderPayment } from '../types';
-import { IEvents } from './base/events';
+import { IEvents, IFormValidator, TOrderPayment } from '../types';
 import { Form } from './Form';
+import { ensureElement } from '../utils/utils';
 
 export class OrderPayment extends Form<TOrderPayment> {
-	protected _buttonOnline: HTMLButtonElement;
-	protected _buttonCash: HTMLButtonElement;
-	protected _address: HTMLInputElement;
+	protected _paymentCard: HTMLButtonElement;
+	protected _paymentCash: HTMLButtonElement;
 
-	constructor(container: HTMLFormElement, protected events: IEvents) {
+	constructor(container: HTMLFormElement, events: IEvents) {
 		super(container, events);
 
-		this._address = container.querySelector(
-			'input[name="address"]'
-		) as HTMLInputElement;
-		this._buttonCash = container.querySelector(
-			'button[name="cash"]'
-		) as HTMLButtonElement;
-		this._buttonOnline = container.querySelector(
-			'button[name="card"]'
-		) as HTMLButtonElement;
+		this._paymentCard = ensureElement<HTMLButtonElement>(
+			'.button_alt[name=card]',
+			this.container
+		);
+		this._paymentCash = ensureElement<HTMLButtonElement>(
+			'.button_alt[name=cash]',
+			this.container
+		);
 
-		if (this._buttonOnline) {
-			this._buttonOnline.addEventListener('click', () => {
-				events.emit('order:change', {
-					payment: this._buttonOnline.name,
-					button: this._buttonOnline,
-				});
+		this._paymentCard.addEventListener('click', () => {
+			this.togglePayment(this._paymentCard);
+			this.events.emit('order:change', {
+				payment: 'online',
+				button: this._paymentCard,
 			});
-		}
+		});
 
-		if (this._buttonCash) {
-			this._buttonCash.addEventListener('click', () => {
-				events.emit('order:change', {
-					payment: this._buttonCash.name,
-					button: this._buttonCash,
-				});
+		this._paymentCash.addEventListener('click', () => {
+			this.togglePayment(this._paymentCash);
+			this.events.emit('order:change', {
+				payment: 'cash',
+				button: this._paymentCash,
 			});
-		}
+		});
 	}
+
+	togglePayment(button: HTMLButtonElement) {
+		this._paymentCard.classList.toggle('button_alt-active', button === this._paymentCard);
+		this._paymentCash.classList.toggle('button_alt-active', button === this._paymentCash);
+	}
+
 	set address(value: string) {
-		this._address.value = value;
-	}
-
-	togglePayment(value: HTMLElement) {
-		this.resetPayment();
-		this.toggleClass(value, 'button_alt-active', true);
-	}
-
-	resetPayment() {
-		this.toggleClass(this._buttonCash, 'button_alt-active', false);
-		this.toggleClass(this._buttonOnline, 'button_alt-active', false);
+		(this.container.elements.namedItem('address') as HTMLInputElement).value = value;
 	}
 }

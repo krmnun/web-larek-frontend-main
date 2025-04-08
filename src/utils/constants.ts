@@ -1,4 +1,4 @@
-export const API_URL = '';
+export const API_URL = '/api/weblarek';
 export const CDN_URL = '/content/weblarek';
 
 export const categories = new Map([

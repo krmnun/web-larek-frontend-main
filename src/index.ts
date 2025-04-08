@@ -8,7 +8,7 @@ import { Api } from './components/base/api';
 import { ensureElement, cloneTemplate } from './utils/utils';
 import { Card, BasketCard } from './components/Card';
 import { Modal } from './components/Modal';
-import { IApi, IProductList, IOrder, PaymentType } from './types/index';
+import { IProductList, IOrder, PaymentType, TFormErrors } from './types/index';
 import { AppApi } from './components/AppApi';
 import { Page } from './components/Page';
 import { Basket } from './components/Basket';
@@ -16,7 +16,9 @@ import { OrderContacts } from './components/OrderContacts';
 import { OrderPayment } from './components/OrderPayment';
 import { Success } from './components/Success';
 
-const baseApi: IApi = new Api(API_URL);
+// Создаём экземпляр Api с базовым URL
+const baseApi = new Api(API_URL);
+// Создаём экземпляр AppApi, передавая URL для CDN и экземпляр Api
 const api = new AppApi(CDN_URL, baseApi);
 const events: IEvents = new EventEmitter();
 
@@ -96,7 +98,7 @@ events.on('basket:open', () => {
 
 events.on('basket:change', () => {
 	page.counter = basketData.products.length;
-	basket.price = basketData.getBasketPrice();
+	basket.total = basketData.getBasketPrice();
 	basket.items = basketData.products.map((basketCard, index) => {
 		const newBasketCard = new BasketCard(cloneTemplate(cardBasketTemplate), {
 			onClick: () => {
@@ -141,21 +143,21 @@ events.on(
 
 events.on(
 	'order:change',
-	(data: { payment: PaymentType; button: HTMLElement }) => {
+	(data: { payment: PaymentType; button: HTMLButtonElement }) => {
 		orderForm.togglePayment(data.button);
 		orderData.setOrderPayment(data.payment);
 		orderData.validateOrder();
 	}
 );
 
-events.on('errors:change', (errors: Partial<IOrder>) => {
+events.on('errors:change', (errors: TFormErrors) => {
 	const { email, phone, address, payment } = errors;
 
 	orderForm.valid = !(payment || address);
-	orderForm.errors = [payment, address].filter(Boolean).join('; ');
+	orderForm.errors = [payment, address].filter(Boolean) as string[];
 
 	contactForm.valid = !(email || phone);
-	contactForm.errors = [email, phone].filter(Boolean).join('; ');
+	contactForm.errors = [email, phone].filter(Boolean) as string[];
 });
 
 events.on('order:submit', () => {
@@ -170,7 +172,7 @@ events.on('order:submit', () => {
 });
 
 events.on('contacts:submit', async () => {
-	basketData.sendBasketToOrder(orderData);
+	basketData.sendBasketToOrder(orderData.order);
 
 	try {
 		const result = await api.orderProducts(orderData.order);
@@ -196,16 +198,10 @@ events.on('contacts:submit', async () => {
 
 (async () => {
 	try {
-		const response = await api.getProducts();
-		if (Array.isArray(response)) {
-			productsData.setProducts(response);
-		} else {
-			console.error('Получен некорректный список продуктов', response);
-		}
+		const products = await api.getProducts();
+		productsData.setProducts(products);
 	} catch (error) {
-		console.error(`Произошла ошибка при получении списка продуктов: ${error}`);
-		alert(
-			'Произошла ошибка при получении списка продуктов. Пожалуйста, попробуйте позже.'
-		);
+		console.error('Произошла ошибка при получении списка продуктов:', error);
+		alert('Не удалось загрузить список продуктов. Попробуйте позже.');
 	}
 })();

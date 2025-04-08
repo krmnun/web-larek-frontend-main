@@ -1,69 +1,60 @@
-import { IEvents } from './base/events';
-import { IOrderData, IBasketData, TProductBasket } from '../types/index';
+import { IProductList, IBasketData, IEvents, IOrder } from '../types'; // Обновляем импорт
 
+// Класс BasketData управляет корзиной
 export class BasketData implements IBasketData {
-	protected _products: TProductBasket[] = [];
+	protected _products: IProductList[] = []; // Список продуктов в корзине
 
 	constructor(protected events: IEvents) {
-		this.events = events;
+		// Сохраняем events для отправки уведомлений
 	}
 
-	get products(): TProductBasket[] {
+	// Геттер для получения списка продуктов в корзине
+	get products(): IProductList[] {
 		return this._products;
 	}
 
-	appendToBasket(product: TProductBasket) {
+	// Метод для добавления продукта в корзину
+	addToBasket(product: IProductList) {
 		this._products.push(product);
 		this.events.emit('basket:change');
 	}
 
-	removeFromBasket(product: TProductBasket) {
-		this._products = this._products.filter(
-			(_product) => _product.id !== product.id
-		);
+	// Метод для удаления продукта из корзины
+	removeFromBasket(product: IProductList) {
+		this._products = this._products.filter((item) => item.id !== product.id);
 		this.events.emit('basket:change');
 	}
 
-	isBasketCard(product: TProductBasket) {
-		return !this.products.some((card) => card.id === product.id)
-			? this.appendToBasket(product)
-			: this.removeFromBasket(product);
-	}
-
-	getButtonStatus(product: TProductBasket) {
-		if (
-			product.price === null ||
-			product.price === undefined ||
-			String(product.price) === 'Бесценно'
-		) {
-			return 'Нельзя купить';
+	// Метод для проверки, есть ли продукт в корзине
+	isBasketCard(product: IProductList) {
+		if (this._products.some((item) => item.id === product.id)) {
+			this.removeFromBasket(product);
+		} else {
+			this.addToBasket(product);
 		}
-		return !this._products.some((card) => card.id === product.id)
-			? 'Купить'
-			: 'Удалить';
 	}
 
-	getBasketPrice() {
-		let total = 0;
-		this._products.map((elem) => {
-			total += elem.price;
-		});
-		return total;
+	// Метод для получения общей суммы корзины
+	getBasketPrice(): number {
+		return this._products.reduce((total, product) => total + product.price, 0);
 	}
 
-	getBasketQuantity() {
-		return this._products.length;
+	// Метод для получения статуса кнопки (в корзине или нет)
+	getButtonStatus(product: IProductList): string {
+		return this._products.some((item) => item.id === product.id)
+			? 'Удалить из корзины'
+			: 'В корзину';
 	}
 
+	// Метод для отправки корзины в заказ
+	sendBasketToOrder(order: IOrder) {
+		order.items = this.products.map((product) => product.id); // Массив строк
+		order.total = this.getBasketPrice(); // Число
+	}
+
+	// Метод для очистки корзины
 	clearBasket() {
 		this._products = [];
 		this.events.emit('basket:change');
-	}
-
-	sendBasketToOrder(orderData: IOrderData) {
-		const orderItems = this._products.map((product) => product.id);
-
-		orderData.setOrderField('items', orderItems);
-		orderData.setOrderField('total', this.getBasketPrice());
 	}
 }
